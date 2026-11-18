@@ -14,7 +14,7 @@ production numbers.
 
 | Piece | Purpose |
 |---|---|
-| `benchmarks/harness.py` | concurrency sweep → p50/p95/p99, tok/s, req/s tables |
+| `benchmarks/harness.py` | concurrency sweep → p50/p95/p99, TTFT p95, tok/s, req/s, goodput at SLO |
 | `client.py` | OpenAI-compatible chat client capturing usage stats |
 | `cost_model.py` | self-hosted $/1M output tokens + break-even token volume vs any API price |
 | `deploy/k8s-hpa.yaml` | Deployment + Service + HPA on `vllm:num_requests_waiting` |
@@ -25,7 +25,7 @@ production numbers.
 ```bash
 pip install -r requirements.txt
 
-python -m uvicorn vllm_lab.server_mock:create_mock_app --factory --port 8040 &
+PYTHONPATH=src python -m uvicorn vllm_lab.server_mock:create_mock_app --factory --port 8040 &
 export VLLM_BASE_URL=http://127.0.0.1:8040 VLLM_MODEL=mock/qwen-0.5b-awq
 pytest -q          # full pipeline incl sweep against the running server
 ```
@@ -45,6 +45,20 @@ print(compare_candidates([
   {"name": "a100", "gpu_cost_per_hour": 3.0, "tokens_per_second": 900, "api_price_per_1m_output": 2.0},
 ]))
 ```
+
+## Serving-grade metrics (market-steal, 2026-11-18)
+
+- **Streaming TTFT/ITL** — `OpenAICompatClient.chat_stream` consumes SSE and
+  reports `ttft_s` plus mean inter-token latency; `summarize` adds
+  `ttft_p50_s`/`ttft_p95_s`. The mock server streams too, so CI covers the
+  parser with zero GPU.
+- **SLO goodput** — `sweep(..., latency_slo_s=..., ttft_slo_s=...)` reports
+  `latency_slo_attainment`, `ttft_slo_attainment` and `goodput_rps` (only
+  requests meeting every supplied SLO, per wall second) plus an
+  `error_rate`/`errors_by_type` taxonomy.
+- **Methodology** — `warmup=N` requests run before timing and stay out of the
+  samples; percentiles use linear interpolation instead of high-biased
+  `int(n*p)` indexing.
 
 Production notes from operating this pattern at scale (SageMaker real-time endpoints, ml.g4/g5 instances):
 quantize before you scale (AWQ ≈ 3-4× tok/$ vs fp16 at equal p95), size replicas on *waiting-queue*
