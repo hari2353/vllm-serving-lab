@@ -17,8 +17,29 @@ production numbers.
 | `benchmarks/harness.py` | concurrency sweep → p50/p95/p99, TTFT p95, tok/s, req/s, goodput at SLO |
 | `client.py` | OpenAI-compatible chat client capturing usage stats |
 | `cost_model.py` | self-hosted $/1M output tokens + break-even token volume vs any API price |
+| `footprint.py` | operational kWh/kgCO2e per 1M tokens + decode roofline + efficiency |
 | `deploy/k8s-hpa.yaml` | Deployment + Service + HPA on `vllm:num_requests_waiting` |
 | `server_mock.py` | deterministic mock engine for CI |
+
+## Operational footprint + roofline
+
+Cross-pollinated from Harvard Edge's TinyML-Footprint and the ML systems
+roofline model:
+
+```python
+from vllm_lab.footprint import carbon_per_million_tokens, decode_roofline, roofline_efficiency
+
+carbon_per_million_tokens(1000, 400, pue=1.15, carbon_intensity_g_per_kwh=400)
+# {'joules_per_token': 0.46, 'kwh_per_1m_tokens': 0.127778, 'kgco2e_per_1m_tokens': 0.051111}
+
+roofline = decode_roofline(7, 2000, bytes_per_param=2.0, kv_bytes_per_token=524_288, context_tokens=4096)
+roofline_efficiency(measured_tokens_per_second=100, roofline=roofline)
+```
+
+Decode at batch 1 is memory-bandwidth bound: weights plus KV cache bytes per
+token set the ceiling. Use `bytes_per_param` 2.0 (fp16), 1.0 (int8), or 0.5
+(4-bit) to compare quantization. Operational carbon excludes embodied
+hardware, matching the TinyML-Footprint boundary.
 
 ## Quickstart
 
