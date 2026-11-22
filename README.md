@@ -41,7 +41,7 @@ token set the ceiling. Use `bytes_per_param` 2.0 (fp16), 1.0 (int8), or 0.5
 (4-bit) to compare quantization. Operational carbon excludes embodied
 hardware, matching the TinyML-Footprint boundary.
 
-## Quickstart
+## Adaptive batching (UC Berkeley RISE Clipper cross-pollination)\n\n`vllm_lab.batching.plan_batches` models Clipper-style adaptive batching:\nwait up to ``max_wait_s`` or until ``max_batch`` requests queue, then process\none batch with a fixed per-batch overhead. Reports p50/p95 latency, mean and\nmax batch size, throughput and a bounded per-request trace:\n\n```python\nfrom vllm_lab.batching import plan_batches\nplan_batches(arrivals, max_batch=8, max_wait_s=0.05, service_overhead_s=0.01)\n```\n\nDeterministic offline planner; no live server needed.\n\n## Quickstart
 
 ```bash
 pip install -r requirements.txt
