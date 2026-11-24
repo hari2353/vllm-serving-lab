@@ -8,17 +8,37 @@ import httpx
 
 
 class OpenAICompatClient:
-    def __init__(self, base_url: str | None = None, api_key: str = "", model: str = "", timeout: float = 120.0) -> None:
-        self.base_url = (base_url or os.getenv("VLLM_BASE_URL", "http://127.0.0.1:8000")).rstrip("/")
+    def __init__(
+        self,
+        base_url: str | None = None,
+        api_key: str = "",
+        model: str = "",
+        timeout: float = 120.0,
+    ) -> None:
+        self.base_url = (
+            base_url or os.getenv("VLLM_BASE_URL", "http://127.0.0.1:8000")
+        ).rstrip("/")
         self.api_key = api_key or os.getenv("VLLM_API_KEY", "EMPTY")
         self.model = model or os.getenv("VLLM_MODEL", "openai/gpt-oss-20b")
         self.timeout = timeout
         self.last_usage: dict = {}
 
-    def chat(self, messages: list[dict], max_tokens: int = 64, temperature: float = 0.0) -> dict:
-        payload = {"model": self.model, "messages": messages, "max_tokens": max_tokens, "temperature": temperature}
+    def chat(
+        self, messages: list[dict], max_tokens: int = 64, temperature: float = 0.0
+    ) -> dict:
+        payload = {
+            "model": self.model,
+            "messages": messages,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+        }
         headers = {"Authorization": f"Bearer {self.api_key}"} if self.api_key else {}
-        resp = httpx.post(f"{self.base_url}/chat/completions", json=payload, headers=headers, timeout=self.timeout)
+        resp = httpx.post(
+            f"{self.base_url}/chat/completions",
+            json=payload,
+            headers=headers,
+            timeout=self.timeout,
+        )
         resp.raise_for_status()
         data = resp.json()
         usage = data.get("usage", {})
@@ -39,16 +59,20 @@ class OpenAICompatClient:
         except Exception:
             return False
 
-    def chat_stream(self, messages: list[dict], max_tokens: int = 64,
-                    temperature: float = 0.0) -> dict:
+    def chat_stream(
+        self, messages: list[dict], max_tokens: int = 64, temperature: float = 0.0
+    ) -> dict:
         """Streaming chat: measures TTFT and mean inter-token latency (ITL).
 
         These are the SLO-bearing numbers in serving benchmarks — end-to-end
         latency alone hides a slow first token behind a fast tail.
         """
         payload = {
-            "model": self.model, "messages": messages, "max_tokens": max_tokens,
-            "temperature": temperature, "stream": True,
+            "model": self.model,
+            "messages": messages,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+            "stream": True,
             "stream_options": {"include_usage": True},
         }
         headers = {"Authorization": f"Bearer {self.api_key}"} if self.api_key else {}
@@ -58,20 +82,27 @@ class OpenAICompatClient:
         gaps: list[float] = []
         parts: list[str] = []
         usage: dict = {}
-        with httpx.stream("POST", f"{self.base_url}/chat/completions",
-                          json=payload, headers=headers, timeout=self.timeout) as resp:
+        with httpx.stream(
+            "POST",
+            f"{self.base_url}/chat/completions",
+            json=payload,
+            headers=headers,
+            timeout=self.timeout,
+        ) as resp:
             resp.raise_for_status()
             for line in resp.iter_lines():
                 if not line.startswith("data:"):
                     continue
-                data = line[len("data:"):].strip()
+                data = line[len("data:") :].strip()
                 if data == "[DONE]":
                     break
                 chunk = json.loads(data)
                 if chunk.get("usage"):
                     usage = chunk["usage"]
                 choices = chunk.get("choices") or []
-                piece = (choices[0].get("delta") or {}).get("content") if choices else None
+                piece = (
+                    (choices[0].get("delta") or {}).get("content") if choices else None
+                )
                 if not piece:
                     continue
                 now = time.perf_counter()

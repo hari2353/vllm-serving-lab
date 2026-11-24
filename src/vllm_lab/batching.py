@@ -6,6 +6,7 @@ a fixed per-batch overhead. Batching amortizes that overhead across requests,
 which raises throughput at the cost of queueing latency. The planner is a
 deterministic offline model so a policy can be compared before deploying it.
 """
+
 from __future__ import annotations
 
 from vllm_lab.benchmarks.harness import _percentile
@@ -74,12 +75,14 @@ def plan_batches(
             latency = round(completion - arrival, 4)
             latencies.append(latency)
             if len(rows) < _MAX_ROWS:
-                rows.append({
-                    "arrival_s": round(arrival, 4),
-                    "batch_size": size,
-                    "dispatch_s": round(start, 4),
-                    "latency_s": latency,
-                })
+                rows.append(
+                    {
+                        "arrival_s": round(arrival, 4),
+                        "batch_size": size,
+                        "dispatch_s": round(start, 4),
+                        "latency_s": latency,
+                    }
+                )
         index = end
 
     ordered = sorted(latencies)

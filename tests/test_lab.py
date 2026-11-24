@@ -34,10 +34,16 @@ def client():
     def fake_post(url, **kwargs):
         kwargs.pop("headers", None)
         with TestClient(app) as tc:
-            resp = tc.post(url.replace("http://mock", ""), json=kwargs.get("json"), timeout=30)
+            resp = tc.post(
+                url.replace("http://mock", ""), json=kwargs.get("json"), timeout=30
+            )
         import httpx as _hx
 
-        return _hx.Response(status_code=resp.status_code, json=resp.json(), request=_hx.Request("POST", url))
+        return _hx.Response(
+            status_code=resp.status_code,
+            json=resp.json(),
+            request=_hx.Request("POST", url),
+        )
 
     import vllm_lab.client as client_module
 
@@ -57,7 +63,9 @@ def test_chat_parses_usage(client):
 
 
 def test_summarize_percentiles_and_rates():
-    rows = summarize([0.1, 0.2, 0.3, 0.4], [10, 10, 10, 10], wall_seconds=1.0, concurrency=2)
+    rows = summarize(
+        [0.1, 0.2, 0.3, 0.4], [10, 10, 10, 10], wall_seconds=1.0, concurrency=2
+    )
     assert rows["requests"] == 4
     assert 0.0 < rows["p50_s"] <= 0.4
     assert rows["tokens_per_second"] == 40.0
@@ -85,21 +93,42 @@ def test_break_even_math():
     seconds = 730 * 3600 * 0.5
     capacity = 1000 * seconds
     expected_self_hosted = (2.0 * 730) / (capacity / 1_000_000)
-    assert result["self_hosted_usd_per_1m_output"] == pytest.approx(expected_self_hosted, rel=0.001)
-    assert result["break_even_tokens_per_month"] == pytest.approx(2.0 * 730 / 2.0 * 1_000_000, rel=0.001)
+    assert result["self_hosted_usd_per_1m_output"] == pytest.approx(
+        expected_self_hosted, rel=0.001
+    )
+    assert result["break_even_tokens_per_month"] == pytest.approx(
+        2.0 * 730 / 2.0 * 1_000_000, rel=0.001
+    )
 
 
 def test_compare_candidates_sorted_by_cost():
     rows = compare_candidates(
         [
-            {"name": "a100", "gpu_cost_per_hour": 3.0, "tokens_per_second": 900, "api_price_per_1m_output": 2.0},
-            {"name": "l4", "gpu_cost_per_hour": 0.8, "tokens_per_second": 300, "api_price_per_1m_output": 2.0},
+            {
+                "name": "a100",
+                "gpu_cost_per_hour": 3.0,
+                "tokens_per_second": 900,
+                "api_price_per_1m_output": 2.0,
+            },
+            {
+                "name": "l4",
+                "gpu_cost_per_hour": 0.8,
+                "tokens_per_second": 300,
+                "api_price_per_1m_output": 2.0,
+            },
         ]
     )
-    assert rows[0]["self_hosted_usd_per_1m_output"] <= rows[1]["self_hosted_usd_per_1m_output"]
+    assert (
+        rows[0]["self_hosted_usd_per_1m_output"]
+        <= rows[1]["self_hosted_usd_per_1m_output"]
+    )
     assert {r["name"] for r in rows} == {"a100", "l4"}
 
 
 def test_invalid_inputs_rejected():
     with pytest.raises(ValueError):
-        break_even(gpu_cost_per_hour=0, tokens_per_second_observed=10, api_price_per_1m_output=1)
+        break_even(
+            gpu_cost_per_hour=0,
+            tokens_per_second_observed=10,
+            api_price_per_1m_output=1,
+        )

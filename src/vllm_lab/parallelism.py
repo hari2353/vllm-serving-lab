@@ -3,6 +3,7 @@
 Estimates per-GPU memory for an LLM served with tensor parallelism: weights,
 KV cache and activations are sharded across ``tp_size`` GPUs. Pure arithmetic.
 """
+
 from __future__ import annotations
 
 

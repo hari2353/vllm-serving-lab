@@ -49,12 +49,18 @@ def test_max_batch_one_serializes_requests():
 def test_batching_improves_throughput_under_fixed_overhead():
     arrivals = [0.0] * 8
     batched = plan_batches(
-        arrivals, max_batch=8, max_wait_s=1.0,
-        service_overhead_s=0.01, per_request_s=0.001,
+        arrivals,
+        max_batch=8,
+        max_wait_s=1.0,
+        service_overhead_s=0.01,
+        per_request_s=0.001,
     )
     serial = plan_batches(
-        arrivals, max_batch=1, max_wait_s=1.0,
-        service_overhead_s=0.01, per_request_s=0.001,
+        arrivals,
+        max_batch=1,
+        max_wait_s=1.0,
+        service_overhead_s=0.01,
+        per_request_s=0.001,
     )
     assert batched["throughput_rps"] > serial["throughput_rps"]
     assert batched["p95_latency_s"] < serial["p95_latency_s"]

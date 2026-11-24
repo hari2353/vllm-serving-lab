@@ -10,7 +10,9 @@ from fastapi.responses import StreamingResponse
 MODEL_NAME = "mock/qwen-0.5b-awq"
 
 
-def create_mock_app(tokens_per_second: float = 500.0, prompt_overhead: int = 9) -> FastAPI:
+def create_mock_app(
+    tokens_per_second: float = 500.0, prompt_overhead: int = 9
+) -> FastAPI:
     app = FastAPI(title="Mock vLLM")
     state = {"requests": 0}
 
@@ -36,6 +38,7 @@ def create_mock_app(tokens_per_second: float = 500.0, prompt_overhead: int = 9) 
         usage = usage_for(messages, max_tokens)
 
         if payload.get("stream"):
+
             async def events():
                 for _ in range(max_tokens):
                     await asyncio.sleep(1 / tokens_per_second)
@@ -50,7 +53,13 @@ def create_mock_app(tokens_per_second: float = 500.0, prompt_overhead: int = 9) 
         content = " ".join(["tok"] * max_tokens)
         return {
             "model": MODEL_NAME,
-            "choices": [{"index": 0, "message": {"role": "assistant", "content": content}, "finish_reason": "length"}],
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {"role": "assistant", "content": content},
+                    "finish_reason": "length",
+                }
+            ],
             "usage": usage,
         }
 

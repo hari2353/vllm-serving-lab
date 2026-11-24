@@ -68,10 +68,14 @@ class TestStreaming:
 
     def test_mock_stream_ends_with_done(self) -> None:
         tc = TestClient(create_mock_app(tokens_per_second=5000.0))
-        body = tc.post("/chat/completions", json={
-            "messages": [{"role": "user", "content": "hi"}],
-            "max_tokens": 3, "stream": True,
-        }).text
+        body = tc.post(
+            "/chat/completions",
+            json={
+                "messages": [{"role": "user", "content": "hi"}],
+                "max_tokens": 3,
+                "stream": True,
+            },
+        ).text
         assert "data: [DONE]" in body
         assert body.count("data:") >= 3
 
@@ -80,8 +84,13 @@ class TestStreaming:
 class TestSloMetrics:
     def test_attainment_and_goodput(self) -> None:
         row = summarize(
-            [0.1, 0.3], [10, 10], wall_seconds=1.0, concurrency=2,
-            ttfts=[0.05, 0.2], latency_slo_s=0.2, ttft_slo_s=0.1,
+            [0.1, 0.3],
+            [10, 10],
+            wall_seconds=1.0,
+            concurrency=2,
+            ttfts=[0.05, 0.2],
+            latency_slo_s=0.2,
+            ttft_slo_s=0.1,
         )
         assert row["latency_slo_attainment"] == 0.5
         assert row["ttft_slo_attainment"] == 0.5
@@ -96,15 +105,27 @@ class TestSloMetrics:
         assert row["goodput_rps"] == row["requests_per_second"]
 
     def test_error_rate_includes_failures_in_denominator(self) -> None:
-        row = summarize([0.1], [10], wall_seconds=1.0, concurrency=2,
-                        errors=1, errors_by_type={"TimeoutError": 1})
+        row = summarize(
+            [0.1],
+            [10],
+            wall_seconds=1.0,
+            concurrency=2,
+            errors=1,
+            errors_by_type={"TimeoutError": 1},
+        )
         assert row["error_rate"] == 0.5
         assert row["errors"] == 1
         assert row["errors_by_type"] == {"TimeoutError": 1}
 
     def test_zero_samples_is_safe(self) -> None:
-        row = summarize([], [], wall_seconds=0.0, concurrency=4,
-                        errors=2, errors_by_type={"ValueError": 2})
+        row = summarize(
+            [],
+            [],
+            wall_seconds=0.0,
+            concurrency=4,
+            errors=2,
+            errors_by_type={"ValueError": 2},
+        )
         assert row["requests"] == 0
         assert row["error_rate"] == 1.0
         assert row["goodput_rps"] == 0.0
@@ -114,8 +135,15 @@ class TestSloMetrics:
 class TestSweepMethodology:
     def test_streaming_sweep_reports_ttft(self, stream_client) -> None:
         client, _ = stream_client
-        rows = sweep(client, ["a prompt", "another prompt"], levels=[1, 2],
-                     max_tokens=3, stream=True, latency_slo_s=10.0, ttft_slo_s=10.0)
+        rows = sweep(
+            client,
+            ["a prompt", "another prompt"],
+            levels=[1, 2],
+            max_tokens=3,
+            stream=True,
+            latency_slo_s=10.0,
+            ttft_slo_s=10.0,
+        )
         assert [r["concurrency"] for r in rows] == [1, 2]
         for row in rows:
             assert row["errors"] == 0
@@ -147,14 +175,20 @@ class TestSweepMethodology:
         assert row["requests"] == 0
 
     def test_percentiles_use_linear_interpolation(self) -> None:
-        row = summarize([0.1, 0.2, 0.3, 0.4], [10] * 4, wall_seconds=1.0,
-                        concurrency=1)
+        row = summarize([0.1, 0.2, 0.3, 0.4], [10] * 4, wall_seconds=1.0, concurrency=1)
         assert row["p50_s"] == pytest.approx(0.25)
         assert row["p99_s"] == pytest.approx(0.397)
 
     def test_markdown_carries_new_columns(self) -> None:
-        row = summarize([0.1], [10], wall_seconds=1.0, concurrency=1,
-                        ttfts=[0.05], latency_slo_s=1.0, ttft_slo_s=1.0)
+        row = summarize(
+            [0.1],
+            [10],
+            wall_seconds=1.0,
+            concurrency=1,
+            ttfts=[0.05],
+            latency_slo_s=1.0,
+            ttft_slo_s=1.0,
+        )
         md = to_markdown([row])
         for column in ("ttft p95", "goodput", "errors"):
             assert column in md

@@ -17,7 +17,9 @@ def test_energy_math_at_ideal_pue():
 def test_pue_and_gpus_scale_energy():
     one = energy_per_million_tokens(1000, 400, pue=1.2)
     two = energy_per_million_tokens(1000, 400, pue=1.2, gpus=2)
-    assert two["kwh_per_1m_tokens"] == pytest.approx(one["kwh_per_1m_tokens"] * 2, rel=1e-4)
+    assert two["kwh_per_1m_tokens"] == pytest.approx(
+        one["kwh_per_1m_tokens"] * 2, rel=1e-4
+    )
 
 
 def test_carbon_math():
@@ -50,7 +52,9 @@ def test_decode_roofline_includes_kv_cache():
         7, 2000, bytes_per_param=2.0, kv_bytes_per_token=524_288, context_tokens=4096
     )
     assert out["kv_bytes"] == 2_147_483_648
-    assert out["roofline_tokens_per_second"] == round(2000e9 / (14e9 + 2_147_483_648), 2)
+    assert out["roofline_tokens_per_second"] == round(
+        2000e9 / (14e9 + 2_147_483_648), 2
+    )
 
 
 def test_quantization_raises_the_ceiling():

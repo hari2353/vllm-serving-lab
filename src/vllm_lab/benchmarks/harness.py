@@ -64,7 +64,9 @@ def summarize(
         "mean_s": round(statistics.mean(ordered), 4) if ordered else 0.0,
         "ttft_p50_s": _percentile(ordered_ttfts, 0.50) if ordered_ttfts else None,
         "ttft_p95_s": _percentile(ordered_ttfts, 0.95) if ordered_ttfts else None,
-        "tokens_per_second": round(total_tokens / wall_seconds, 2) if wall_seconds > 0 else 0.0,
+        "tokens_per_second": round(total_tokens / wall_seconds, 2)
+        if wall_seconds > 0
+        else 0.0,
         "requests_per_second": round(n / wall_seconds, 3) if wall_seconds > 0 else 0.0,
         "goodput_rps": round(goodput, 3),
         "latency_slo_attainment": latency_attainment,
@@ -114,9 +116,12 @@ def sweep(
                 start = time.perf_counter()
                 if stream:
                     out = client.chat_stream(
-                        [{"role": "user", "content": prompt}], max_tokens=max_tokens)
+                        [{"role": "user", "content": prompt}], max_tokens=max_tokens
+                    )
                 else:
-                    out = client.chat([{"role": "user", "content": prompt}], max_tokens=max_tokens)
+                    out = client.chat(
+                        [{"role": "user", "content": prompt}], max_tokens=max_tokens
+                    )
                 latency = time.perf_counter() - start
                 with lock:
                     latencies.append(latency)
@@ -138,20 +143,27 @@ def sweep(
             for t in threads:
                 t.join()
         wall = time.perf_counter() - wall_start
-        results.append(summarize(
-            latencies, tokens, wall, level,
-            ttfts=ttfts or None,
-            latency_slo_s=latency_slo_s,
-            ttft_slo_s=ttft_slo_s,
-            errors=sum(errors_by_type.values()),
-            errors_by_type=errors_by_type,
-        ))
+        results.append(
+            summarize(
+                latencies,
+                tokens,
+                wall,
+                level,
+                ttfts=ttfts or None,
+                latency_slo_s=latency_slo_s,
+                ttft_slo_s=ttft_slo_s,
+                errors=sum(errors_by_type.values()),
+                errors_by_type=errors_by_type,
+            )
+        )
     return results
 
 
 def to_markdown(rows: list[dict]) -> str:
-    header = ("| conc | req | errors | p50 | p95 | p99 | ttft p95 | tok/s | req/s | goodput |"
-              "\n|---|---|---|---|---|---|---|---|---|---|")
+    header = (
+        "| conc | req | errors | p50 | p95 | p99 | ttft p95 | tok/s | req/s | goodput |"
+        "\n|---|---|---|---|---|---|---|---|---|---|"
+    )
     lines = [header]
     for r in rows:
         ttft = r.get("ttft_p95_s")
