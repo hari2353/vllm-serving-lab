@@ -1,8 +1,4 @@
-import threading
-import time
-
 import pytest
-from fastapi.testclient import TestClient
 
 from vllm_lab.benchmarks.harness import summarize, sweep, to_markdown
 from vllm_lab.client import OpenAICompatClient
