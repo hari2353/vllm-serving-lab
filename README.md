@@ -46,6 +46,11 @@ hardware, matching the TinyML-Footprint boundary.
 `vllm_lab.parallelism.tp_memory` estimates per-GPU memory for a
 tensor-parallel deployment from parameter counts, KV cache and activations.
 
+## KV-cache memory (vllm-project/vllm cross-pollination)
+
+`vllm_lab.kv_cache.kv_cache_bytes` estimates KV-cache memory by layers,
+heads, head dim, seq len, batch and TP size.
+
 ## Quickstart
 
 ```bash
